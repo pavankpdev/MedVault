@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "AccessControl.sol";
+import "./AccessControl.sol";
 
 /// @title Records Contract
 /// @notice Deploys new Record contract for every new record the user creates

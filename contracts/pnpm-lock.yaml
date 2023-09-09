@@ -3,10 +3,12 @@ lockfileVersion: 5.4
 specifiers:
   '@nomicfoundation/hardhat-toolbox': ^2.0.2
   '@openzeppelin/contracts': ^4.9.3
+  dotenv: ^16.3.1
   hardhat: ^2.17.2
 
 dependencies:
   '@openzeppelin/contracts': 4.9.3
+  dotenv: 16.3.1
 
 devDependencies:
   '@nomicfoundation/hardhat-toolbox': 2.0.2_hardhat@2.17.2
@@ -1204,6 +1206,11 @@ packages:
     resolution: {integrity: sha512-/VTCrvm5Z0JGty/BWHljh+BAiw3IK+2j87NGMu8Nwc/f48WoDAC395uomO9ZD117ZOBaHmkX1oyLvkVM/aIT3w==}
     engines: {node: '>=0.3.1'}
     dev: true
+
+  /dotenv/16.3.1:
+    resolution: {integrity: sha512-IPzF4w4/Rd94bA9imS68tZBaYyBWSCE47V1RGuMrB94iyTOIEwRmVL2x/4An+6mETpLrKJ5hQkB8W4kFAadeIQ==}
+    engines: {node: '>=12'}
+    dev: false
 
   /elliptic/6.5.4:
     resolution: {integrity: sha512-iLhC6ULemrljPZb+QutR5TQGB+pdW6KGD5RSegS+8sorOZT+rdQFbsQFJgvN3eRqNALqJer4oQ16YvJHlU8hzQ==}
