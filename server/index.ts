@@ -9,6 +9,7 @@ import * as fs from 'fs'
 dotenv.config();
 
 import {getPinnedFiles, pinFileToIPFS} from "./provider/pinata";
+import {encrypt} from "./utils/crypto";
 
 const app: Express = express();
 app.use(express.json());
@@ -43,7 +44,7 @@ app.post('/record/new', upload.single('file') , async (req: Request, res: Respon
     const pinned = await pinFileToIPFS(req?.file?.filename, JSON.parse(metadata), name)
 
     res.json({
-        pinned
+        hash: encrypt(pinned.IpfsHash)
     }).status(201)
 
     fs.unlinkSync(req?.file?.path as string);
