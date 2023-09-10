@@ -10,6 +10,7 @@ dotenv.config();
 
 import {getPinnedFiles, pinFileToIPFS} from "./provider/pinata";
 import {encrypt} from "./utils/crypto";
+import {deployRecordContract, getRecordContract} from "./utils/contracts";
 
 const app: Express = express();
 app.use(express.json());
@@ -29,8 +30,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-app.get('/record', async (req: Request, res: Response) => {
-    const rs = await getPinnedFiles('').catch(console.log)
+app.get('/record/:hash', async (req: Request, res: Response) => {
+    const { hash } = req.params;
+    const rs = await getPinnedFiles(hash).catch(console.log)
     return res.json(rs).status(200)
 })
 
@@ -39,18 +41,28 @@ app.post('/record/new', upload.single('file') , async (req: Request, res: Respon
         return res.status(400).send('No files were uploaded.');
     }
 
-    const {metadata, name} = req.body;
+    const {metadata, name, userAddress} = req.body;
 
     const pinned = await pinFileToIPFS(req?.file?.filename, JSON.parse(metadata), name)
+    const encryptedHash = encrypt(pinned.IpfsHash)
+
+    const deployment = await deployRecordContract(name, encryptedHash)
+    const recordAddress = await deployment.getAddress()
+
+    const recordContract = getRecordContract(recordAddress)
+
+    const tx = await recordContract.transferOwnership(userAddress)
 
     res.json({
-        hash: encrypt(pinned.IpfsHash)
+        record: recordAddress,
+        transactionHash: tx.hash,
     }).status(201)
 
     fs.unlinkSync(req?.file?.path as string);
 
     return
 })
+
 
 app.listen(port, () => {
     console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
