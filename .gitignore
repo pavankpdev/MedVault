@@ -1,2 +1,5 @@
 .idea
 node_modules
+pinata.txt
+.env
+server/provider/dummy.pdf
