@@ -12,7 +12,7 @@ import {getPinnedFiles, pinFileToIPFS} from "./provider/pinata";
 import {encrypt} from "./utils/crypto";
 import {deployRecordContract, getRecordContract} from "./utils/contracts";
 import {ethers} from "ethers";
-import {insertRow} from "./provider/supabase";
+import {getRow, insertRow} from "./provider/supabase";
 import {session} from "./middleware/session";
 
 const app: Express = express();
@@ -70,7 +70,15 @@ app.post('/record/new', upload.single('file') , async (req: Request, res: Respon
         return res.status(400).send('No files were uploaded.');
     }
 
-    const {metadata, name, userAddress} = req.body;
+    const {metadata, name, patientId} = req.body;
+
+    const {data: user, error} = await getRow('User', 'id', patientId)
+
+    if(error) {
+        return res.status(500).json({
+            error: error.message,
+        })
+    }
 
     const pinned = await pinFileToIPFS(req?.file?.filename, JSON.parse(metadata), name)
     const encryptedHash = encrypt(pinned.IpfsHash)
@@ -80,7 +88,7 @@ app.post('/record/new', upload.single('file') , async (req: Request, res: Respon
 
     const recordContract = getRecordContract(recordAddress)
 
-    const tx = await recordContract.transferOwnership(userAddress)
+    const tx = await recordContract.transferOwnership(user.address)
 
     res.json({
         record: recordAddress,
