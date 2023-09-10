@@ -1,6 +1,6 @@
 import express from 'express';
 import  { Express, Request, Response } from 'express';
-import dotenv from 'dotenv';
+import dotenv, {decrypt} from 'dotenv';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
@@ -11,6 +11,9 @@ dotenv.config();
 import {getPinnedFiles, pinFileToIPFS} from "./provider/pinata";
 import {encrypt} from "./utils/crypto";
 import {deployRecordContract, getRecordContract} from "./utils/contracts";
+import {ethers} from "ethers";
+import {insertRow} from "./provider/supabase";
+import {session} from "./middleware/session";
 
 const app: Express = express();
 app.use(express.json());
@@ -34,6 +37,32 @@ app.get('/record/:hash', async (req: Request, res: Response) => {
     const { hash } = req.params;
     const rs = await getPinnedFiles(hash).catch(console.log)
     return res.json(rs).status(200)
+})
+
+app.post('/account/new', session ,async (req: Request, res: Response) => {
+    const password: string = req.body.password;
+
+    const wallet = ethers.Wallet.createRandom();
+    const encryptedWalletJSON = await wallet.encrypt(password)
+
+    const {error} = await insertRow(
+        'User',
+        {
+            address: wallet.address,
+            name: `(req as any).user`,
+            email: 'a'
+        }
+    )
+
+    if(error) {
+        return res.status(500).json({
+            error: error.message,
+        })
+    }
+
+    return res.json({
+        wallet: JSON.parse(encryptedWalletJSON),
+    })
 })
 
 app.post('/record/new', upload.single('file') , async (req: Request, res: Response) => {
@@ -62,7 +91,6 @@ app.post('/record/new', upload.single('file') , async (req: Request, res: Respon
 
     return
 })
-
 
 app.listen(port, () => {
     console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
