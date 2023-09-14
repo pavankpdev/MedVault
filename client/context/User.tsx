@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, {createContext, useState, useEffect, useContext} from 'react';
 import { supabase } from '../Provider/supabase';
 import { Session } from '@supabase/supabase-js';
 
@@ -20,6 +20,7 @@ interface Props {
     children: React.ReactNode;
 }
 
+const useAuth = () => useContext(AuthContext)
 const AuthProvider = (props: Props) => {
     // user null = loading
     const [isAuthenticated, setIsAuthenticated] = useState<null | boolean>(null);
@@ -66,4 +67,4 @@ const AuthProvider = (props: Props) => {
     );
 };
 
-export { AuthContext, AuthProvider };
+export { AuthContext, AuthProvider, useAuth };

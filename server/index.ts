@@ -48,7 +48,7 @@ app.post('/account/new', session ,async (req: Request, res: Response) => {
         const wallet = ethers.Wallet.createRandom();
         const encryptedWalletJSON = await wallet.encrypt(password)
 
-        const {error} =await insertRow(
+        const {error, data: user} = await insertRow(
             'Users',
             {
                 wallet: wallet.address,
@@ -67,7 +67,8 @@ app.post('/account/new', session ,async (req: Request, res: Response) => {
         const {error: createWalletErr} =await insertRow(
             'Wallets',
             {
-                encryptedJSON: encryptedWalletJSON
+                encryptedJSON: encryptedWalletJSON,
+                user_id: user.id
             }
         )
 

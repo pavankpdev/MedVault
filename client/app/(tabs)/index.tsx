@@ -9,10 +9,15 @@ import {supabase} from "../../Provider/supabase";
 import { router } from 'expo-router';
 import { Link } from "expo-router";
 import { Pressable } from "react-native";
+import {useSecureStorage} from "../../hooks/useSecureStorage";
+import {useAuth} from "../../context/User";
 
 export default function TabOneScreen() {
     const [email, setEmail] = React.useState("");
     const [password, setPassword] = React.useState("");
+    const {setItem} = useSecureStorage()
+
+    const {setUser} = useAuth()
 
     const login = async () => {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -26,6 +31,31 @@ export default function TabOneScreen() {
         }
 
         if (data.user) {
+            const {data: user} = await supabase
+                .from('Users')
+                .select('*')
+                .eq('email', data.user.email)
+                .single()
+
+
+            const {data: wallet} = await supabase
+                .from('Wallets')
+                .select('*')
+                .eq('user_id', user.id)
+                .single()
+
+
+            await setItem("wallet", JSON.stringify(wallet.encryptedJSON))
+
+            if (setUser) {
+                setUser({
+                    email,
+                    name: user?.name,
+                    wallet: user?.wallet,
+                    id: user?.id as string
+                })
+            }
+
             router.replace("/(tabs)/dashboard" as any)
             return
         }

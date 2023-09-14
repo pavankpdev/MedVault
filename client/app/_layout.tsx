@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import { PaperProvider } from 'react-native-paper';
 import '@ethersproject/shims'
+import {AuthProvider} from "../context/User";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -50,10 +51,12 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={DefaultTheme}>
       <PaperProvider theme={DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-        </Stack>
+        <AuthProvider>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          </Stack>
+        </AuthProvider>
       </PaperProvider>
     </ThemeProvider>
   );

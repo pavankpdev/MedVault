@@ -11,20 +11,20 @@ import {supabase} from "../../Provider/supabase";
 import { router } from 'expo-router';
 import {useSecureStorage} from "../../hooks/useSecureStorage";
 import {axios} from "../../config/axios"
+import {useAuth} from "../../context/User";
 export default function TabOneScreen() {
     const [email, setEmail] = React.useState("");
     const [name, setName] = React.useState("");
     const [password, setPassword] = React.useState("");
 
     const {setItem} = useSecureStorage()
+    const {setUser} = useAuth()
 
     const register = async () => {
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
         })
-
-        console.log(data.session)
 
         if (error) {
             alert(error.message)
@@ -44,9 +44,16 @@ export default function TabOneScreen() {
             }
         }).catch(console.log)
 
-        console.log(res)
+        await setItem("wallet", JSON.stringify(res?.data?.encryptedWalletJSON))
 
-        // await setItem("wallet", res?.encryptedWalletJSON)
+        if (setUser) {
+            setUser({
+                email,
+                name,
+                wallet: res?.data?.wallet,
+                id: data?.user?.id as string
+            })
+        }
 
         router.replace("/(tabs)/dashboard" as any)
         return

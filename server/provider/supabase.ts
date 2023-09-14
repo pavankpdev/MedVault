@@ -8,7 +8,7 @@ export const supabase = createClient(
 );
 
 export const insertRow = async (table: string, data: Record<string, any>) => {
-    return supabase.from(table).insert([data]);
+    return supabase.from(table).insert([data]).select().single();
 }
 
 export const getRow = async (table: string, selector: string, value: string) => {
