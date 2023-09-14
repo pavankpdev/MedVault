@@ -1,4 +1,6 @@
+import '@ethersproject/shims'
 import { StyleSheet } from 'react-native';
+import { v4 as uuidv4 } from 'uuid';
 
 import EditScreenInfo from '../../components/EditScreenInfo';
 import { Text, View } from '../../components/Themed';
@@ -7,35 +9,58 @@ import { TextInput } from 'react-native-paper';
 import React from "react";
 import {supabase} from "../../Provider/supabase";
 import { router } from 'expo-router';
-import { Link } from "expo-router";
-import { Pressable } from "react-native";
-
+import {useSecureStorage} from "../../hooks/useSecureStorage";
+import {axios} from "../../config/axios"
 export default function TabOneScreen() {
     const [email, setEmail] = React.useState("");
+    const [name, setName] = React.useState("");
     const [password, setPassword] = React.useState("");
 
-    const login = async () => {
-        const { data, error } = await supabase.auth.signInWithPassword({
+    const {setItem} = useSecureStorage()
+
+    const register = async () => {
+        const { data, error } = await supabase.auth.signUp({
             email,
             password,
         })
+
+        console.log(data.session)
 
         if (error) {
             alert(error.message)
             return
         }
 
-        if (data.user) {
-            router.replace("/(tabs)/dashboard" as any)
-            return
-        }
+        const res = await axios({
+            method: "POST",
+            url: "/account/new",
+            headers: {
+                'x-access-token': data.session?.access_token,
+                'x-refresh-token': data.session?.refresh_token,
+            },
+            data: {
+                password,
+                name
+            }
+        }).catch(console.log)
 
-        router.replace("/(tabs)/register" as any)
+        console.log(res)
 
+        // await setItem("wallet", res?.encryptedWalletJSON)
+
+        router.replace("/(tabs)/dashboard" as any)
+        return
     }
 
     return (
         <View style={styles.container}>
+            <TextInput
+                label="Name"
+                value={name}
+                onChangeText={text => setName(text)}
+                style={styles.input}
+                autoCapitalize="none"
+            />
             <TextInput
                 label="Email"
                 value={email}
@@ -58,15 +83,10 @@ export default function TabOneScreen() {
                     marginVertical: 15,
                 }}
                 textColor="#fff"
-                onPress={login}
+                onPress={register}
             >
-                Login
+                Register
             </Button>
-            <Link href="/(tabs)/register" asChild>
-                <Pressable>
-                    <Text>Create new account</Text>
-                </Pressable>
-            </Link>
         </View>
     );
 }
