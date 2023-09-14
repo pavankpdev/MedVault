@@ -5,6 +5,7 @@ import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
 import * as fs from 'fs'
+import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config();
 
@@ -40,29 +41,51 @@ app.get('/record/:hash', async (req: Request, res: Response) => {
 })
 
 app.post('/account/new', session ,async (req: Request, res: Response) => {
-    const password: string = req.body.password;
+    try {
+        const password: string = req.body.password;
+        const name: string = req.body.name;
 
-    const wallet = ethers.Wallet.createRandom();
-    const encryptedWalletJSON = await wallet.encrypt(password)
+        const wallet = ethers.Wallet.createRandom();
+        const encryptedWalletJSON = await wallet.encrypt(password)
 
-    const {error} = await insertRow(
-        'User',
-        {
-            address: wallet.address,
-            name: `(req as any).user`,
-            email: 'a'
+        const {error} =await insertRow(
+            'Users',
+            {
+                wallet: wallet.address,
+                name,
+                email: (req as any)?.user?.email
+            }
+        )
+
+        if(error) {
+            console.log(error)
+            return res.status(500).json({
+                error: error.message,
+            })
         }
-    )
 
-    if(error) {
-        return res.status(500).json({
-            error: error.message,
-        })
+        const {error: createWalletErr} =await insertRow(
+            'Wallets',
+            {
+                encryptedJSON: encryptedWalletJSON
+            }
+        )
+
+        if(createWalletErr) {
+            console.log(createWalletErr)
+            return res.status(500).json({
+                error: createWalletErr.message,
+            })
+        }
+
+
+        return res.json({
+            encryptedWalletJSON: JSON.parse(encryptedWalletJSON),
+            wallet: wallet.address
+        }).status(201)
+    } catch (err: unknown) {
+        console.log(err)
     }
-
-    return res.json({
-        wallet: JSON.parse(encryptedWalletJSON),
-    })
 })
 
 app.post('/record/new', upload.single('file') , async (req: Request, res: Response) => {
