@@ -8,6 +8,7 @@ export type IUser = {
     id: string;
     name: string;
     hospital: string;
+    wallet: string;
 }
 type ContextProps = {
     isAuthenticated: null | boolean;
@@ -26,16 +27,7 @@ const AuthProvider = (props: Props) => {
     // user null = loading
     const [isAuthenticated, setIsAuthenticated] = useState<null | boolean>(null);
     const [user, setUser] = useState<IUser | null>(null)
-    const {getItem} = useSecureStorage()
 
-    const path = usePathname()
-
-    useEffect(() => {
-        getItem("user").then((user) => {
-            const parsedUser = JSON.parse(user || "{}")
-            setUser(parsedUser)
-        })
-    }, [path]);
 
     return (
         <AuthContext.Provider

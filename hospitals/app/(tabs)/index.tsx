@@ -37,6 +37,7 @@ export default function TabOneScreen() {
                     id: data?.doctor?.id,
                     name: data?.doctor?.name,
                     hospital: data?.doctor?.hospital,
+                    wallet: data?.doctor?.address,
                 });
 
                 if (setIsAuthenticated) {

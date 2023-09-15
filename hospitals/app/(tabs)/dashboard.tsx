@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import {Pressable, StyleSheet} from 'react-native';
 
 import EditScreenInfo from '../../components/EditScreenInfo';
 import { Text, View } from '../../components/Themed';
@@ -10,10 +10,10 @@ import {useEffect, useState} from "react";
 import {axios} from "../../config/axios";
 import {getVaultContract} from "../../utils/provider";
 import {
-  SafeAreaView,
   ScrollView,
-  StatusBar,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+
 
 type IRecords = {
   id: string,
@@ -62,6 +62,9 @@ export default function Dashboard() {
     })
   }, []);
 
+  const copyToClipboard = (text: string) => {
+    Clipboard.setStringAsync(text);
+  };
 
   return (
     <View style={styles.container}>
@@ -78,7 +81,18 @@ export default function Dashboard() {
           Doctor Name: <Text style={{fontWeight: '600', color: '#000'}}>{user?.name}</Text>
         </Text>
         <Text style={styles.text}>
-          Doctor Id: <Text style={{fontWeight: '600', color: '#000'}}>{user?.id}</Text>
+          Doctor Id: <Pressable
+          onPress={() => copyToClipboard(user?.id as string)}
+        >
+          <Text style={{fontWeight: '600', color: '#000'}}>{user?.id}</Text>
+        </Pressable>
+        </Text>
+        <Text style={styles.text}>
+          Wallet: <Pressable
+            onPress={() => copyToClipboard(user?.wallet as string)}
+        >
+          <Text style={{fontWeight: '600', color: '#000'}}>{`${user?.wallet.slice(0,4)}...${user?.wallet.slice(-4)}`}</Text>
+        </Pressable>
         </Text>
         <Text style={styles.text}>
           Hospital: <Text style={{fontWeight: '600', color: '#000'}}>{user?.hospital}</Text>
