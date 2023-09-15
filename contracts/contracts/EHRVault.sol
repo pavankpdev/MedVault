@@ -9,27 +9,52 @@ contract EHRVault {
 
     Counters.Counter private _recordIds;
 
-    mapping (uint256 => address) private records;
+    struct Record {
+        uint256 id;
+        address recordAddress;
+        string metadata;
+        string name;
+        string ipfs;
+        string patientUid;
+    }
 
-    event RecordAdded(uint256 indexed id, address indexed recordAddress);
+    mapping (uint256 => Record) private records;
 
-    function addRecord(address recordAddress) public returns (uint256) {
+    event RecordAdded(uint256 indexed id);
+
+    function addRecord(Record memory _record) public returns (uint256) {
         _recordIds.increment();
 
         uint256 newRecordId = _recordIds.current();
-        records[newRecordId] = recordAddress;
+        Record memory record = Record(newRecordId, _record.recordAddress, _record.metadata, _record.name, _record.ipfs, _record.patientUid);
 
-        emit RecordAdded(newRecordId, recordAddress);
+        records[newRecordId] = record;
+
+        emit RecordAdded(newRecordId);
 
         return newRecordId;
     }
 
-    function getRecord(uint256 id) public view returns (address) {
+    function getRecord(uint256 id) public view returns (Record memory) {
         return records[id];
     }
 
     function totalRecords() public view returns (uint256) {
         return _recordIds.current();
+    }
+
+    function getRecordsByPatientId(string memory patientUid) public view returns (Record[] memory) {
+        Record[] memory patientRecords = new Record[](_recordIds.current());
+        uint256 patientRecordsCount = 0;
+
+        for (uint256 i = 1; i <= _recordIds.current(); i++) {
+            if (keccak256(abi.encodePacked(records[i].patientUid)) == keccak256(abi.encodePacked(patientUid))) {
+                patientRecords[patientRecordsCount] = records[i];
+                patientRecordsCount++;
+            }
+        }
+
+        return patientRecords;
     }
 
 }
