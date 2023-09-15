@@ -1,19 +1,18 @@
 import express from 'express';
 import  { Express, Request, Response } from 'express';
-import dotenv, {decrypt} from 'dotenv';
+import dotenv from 'dotenv';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
 import * as fs from 'fs'
-import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config();
 
 import {getPinnedFiles, pinFileToIPFS} from "./provider/pinata";
-import {encrypt} from "./utils/crypto";
+import {encrypt, decrypt} from "./utils/crypto";
 import {deployRecordContract, getRecordContract, getVaultContract} from "./utils/contracts";
 import {ethers} from "ethers";
-import {getRow, insertRow} from "./provider/supabase";
+import {getRow, insertRow, supabase} from "./provider/supabase";
 import {session} from "./middleware/session";
 
 const app: Express = express();
@@ -60,8 +59,9 @@ app.post('/doctor/login', async (req: Request, res: Response) => {
 
 app.get('/record/:hash', async (req: Request, res: Response) => {
     const { hash } = req.params;
-    const rs = await getPinnedFiles(hash).catch(console.log)
-    return res.json(rs).status(200)
+    const decryptedHash = decrypt(hash)
+    // const rs = await getPinnedFiles(decryptedHash).catch(console.log)
+    return res.json({ipfs: decryptedHash}).status(200)
 })
 
 app.post('/account/new', session ,async (req: Request, res: Response) => {
@@ -163,6 +163,41 @@ app.post('/record/new', upload.single('file') , async (req: Request, res: Respon
     } catch (err) {
         console.log(err)
     }
+})
+
+app.post('/record/access', async (req: Request, res: Response) => {
+    const {doctorId} = req.body
+
+    const totalRecords = await (getVaultContract()).totalRecords()
+    console.log(totalRecords)
+
+    const {data, error} = await insertRow('Records', {
+        id: Date.now(),
+        address: totalRecords - 1,
+        doctorId: doctorId,
+    })
+
+    return res.json({
+        data,
+    })
+
+})
+
+app.get('/record/access/:doctorId', async (req: Request, res: Response) => {
+    const {doctorId} = req.params
+
+    const {data, error} = await supabase.from('Records').select('*').eq('doctor_id', doctorId)
+
+    if(error) {
+        return res.json({
+            error: error.message,
+        }).status(500)
+    }
+
+    return res.json({
+        data,
+    })
+
 })
 
 app.listen(port, () => {
