@@ -106,6 +106,7 @@ export default function Dashboard() {
                   doctor={JSON.parse(record.metadata).doctorName as string}
                   diagnosis={JSON.parse(record.metadata).diagnosis as string}
                   hash={record.ipfs}
+                  key={index}
               />
           ))
         }

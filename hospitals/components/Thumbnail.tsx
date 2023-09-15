@@ -1,6 +1,7 @@
 import {View, Text, StyleSheet} from "react-native";
 import React from "react";
 import {Button, Chip} from 'react-native-paper';
+import {router} from "expo-router";
 
 type ThumbnailProps = {
     title: string,
@@ -11,6 +12,11 @@ type ThumbnailProps = {
 }
 
 const Thumbnail: React.FC<ThumbnailProps> = (props) => {
+
+    const openReport = () => {
+        router.push(`/(tabs)/${props.hash}`)
+    }
+
     return <>
         <View style={styles.container}>
             <Text
@@ -27,7 +33,7 @@ const Thumbnail: React.FC<ThumbnailProps> = (props) => {
                 flexDirection: 'row'
             }}>
                 <Text> <Chip icon="file-document-multiple" onPress={() => console.log('Pressed')} textStyle={{color: '#64748b'}}>{props.diagnosis}</Chip> </Text>
-                <Button mode={'outlined'}>
+                <Button mode={'outlined'} onPress={openReport}>
                     View Report
                 </Button>
             </View>
