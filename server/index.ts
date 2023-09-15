@@ -11,7 +11,7 @@ dotenv.config();
 
 import {getPinnedFiles, pinFileToIPFS} from "./provider/pinata";
 import {encrypt} from "./utils/crypto";
-import {deployRecordContract, getRecordContract} from "./utils/contracts";
+import {deployRecordContract, getRecordContract, getVaultContract} from "./utils/contracts";
 import {ethers} from "ethers";
 import {getRow, insertRow} from "./provider/supabase";
 import {session} from "./middleware/session";
@@ -33,6 +33,30 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
+
+app.post('/doctor/login', async (req: Request, res: Response) => {
+    const {id, password} = req.body
+
+    const {data, error} = await getRow('Doctors', 'id', id);
+
+   if(error) {
+       return res.json({
+           error: error.message,
+       }).status(500)
+   }
+
+   if(password !== data.password) {
+       return res.json({
+           error: 'Invalid Password'
+       }).status(500)
+   }
+
+   return res.json({
+       doctor: data,
+       status: "success"
+   })
+
+})
 
 app.get('/record/:hash', async (req: Request, res: Response) => {
     const { hash } = req.params;
@@ -90,38 +114,55 @@ app.post('/account/new', session ,async (req: Request, res: Response) => {
 })
 
 app.post('/record/new', upload.single('file') , async (req: Request, res: Response) => {
-    if (!req.file) {
-        return res.status(400).send('No files were uploaded.');
+    try {
+        if (!req.file) {
+            return res.status(400).send('No files were uploaded.');
+        }
+
+        const {metadata, name, patientId} = req.body;
+
+        const {data: user, error} = await getRow('Users', 'id', patientId)
+
+        if(error) {
+            return res.status(500).json({
+                error: error.message,
+            })
+        }
+
+        const pinned = await pinFileToIPFS(req?.file?.filename, JSON.parse(metadata), name)
+        const encryptedHash = encrypt(pinned.IpfsHash)
+
+        const deployment = await deployRecordContract(name, encryptedHash)
+        await deployment.waitForDeployment()
+        const recordAddress = await deployment.getAddress()
+
+        const recordContract = getRecordContract(recordAddress)
+
+        const record = {
+            id: 1,
+            recordAddress: recordAddress,
+            metadata: metadata,
+            name: name,
+            ipfs: encryptedHash,
+            patientUid: user?.id || '', // Ensure patientUid is set to a default value if user?.id is undefined
+        };
+
+        let tx = await (getVaultContract()).addRecord(record).catch(console.log)
+
+        await tx.wait()
+
+        tx = await recordContract.transferOwnership(user.wallet)
+
+        fs.unlinkSync(req?.file?.path as string);
+
+        return res.json({
+            record: recordAddress,
+            transactionHash: tx.hash,
+        }).status(201)
+
+    } catch (err) {
+        console.log(err)
     }
-
-    const {metadata, name, patientId} = req.body;
-
-    const {data: user, error} = await getRow('User', 'id', patientId)
-
-    if(error) {
-        return res.status(500).json({
-            error: error.message,
-        })
-    }
-
-    const pinned = await pinFileToIPFS(req?.file?.filename, JSON.parse(metadata), name)
-    const encryptedHash = encrypt(pinned.IpfsHash)
-
-    const deployment = await deployRecordContract(name, encryptedHash)
-    const recordAddress = await deployment.getAddress()
-
-    const recordContract = getRecordContract(recordAddress)
-
-    const tx = await recordContract.transferOwnership(user.address)
-
-    res.json({
-        record: recordAddress,
-        transactionHash: tx.hash,
-    }).status(201)
-
-    fs.unlinkSync(req?.file?.path as string);
-
-    return
 })
 
 app.listen(port, () => {

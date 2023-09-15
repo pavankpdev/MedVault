@@ -1,4 +1,5 @@
 import RecordJSON from "../ABI/Record.json"
+import EHRVaultJSON from "../ABI/EHRVault.json"
 import {ethers} from "ethers";
 import {signer} from "./ethers";
 
@@ -19,4 +20,9 @@ export const deployRecordContract = async (
 export const getRecordContract = (address: string) => {
     const abi = RecordJSON.abi;
     return new ethers.Contract(address, abi, signer);
+}
+
+export const getVaultContract = () => {
+    const abi = EHRVaultJSON.abi;
+    return new ethers.Contract('0xA38d762C8ad037C7Cb4ea1f01C27f1D292F52250', abi, signer);
 }
