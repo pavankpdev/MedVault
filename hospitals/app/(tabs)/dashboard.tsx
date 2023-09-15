@@ -4,12 +4,14 @@ import EditScreenInfo from '../../components/EditScreenInfo';
 import { Text, View } from '../../components/Themed';
 import {useAuth} from "../../context/User";
 import Thumbnail from "../../components/Thumbnail";
-import {Link} from "expo-router";
+import {Link, router} from "expo-router";
 import {Button} from "react-native-paper";
 
 export default function Dashboard() {
 
-  const {user} = useAuth()
+  const addReport = () => {
+    router.push("/(tabs)/add-report")
+  }
 
   return (
     <View style={styles.container}>
@@ -17,6 +19,7 @@ export default function Dashboard() {
           style={styles.reportBtn}
           mode={'contained'}
           textColor={'#fff'}
+          onPress={() => addReport()}
       >
         Add new Report
       </Button>
@@ -51,5 +54,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 10,
     width: '100%',
+    zIndex: 100
   }
 });
