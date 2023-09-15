@@ -57,4 +57,18 @@ contract EHRVault {
         return patientRecords;
     }
 
+    function getRecordsByAddress (address recordAddress) public view returns (Record[] memory) {
+        Record[] memory patientRecords = new Record[](_recordIds.current());
+        uint256 patientRecordsCount = 0;
+
+        for (uint256 i = 1; i <= _recordIds.current(); i++) {
+            if (records[i].recordAddress == recordAddress) {
+                patientRecords[patientRecordsCount] = records[i];
+                patientRecordsCount++;
+            }
+        }
+
+        return patientRecords;
+    }
+
 }
