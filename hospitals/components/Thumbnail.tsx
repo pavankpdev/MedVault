@@ -1,11 +1,13 @@
 import {View, Text, StyleSheet} from "react-native";
 import React from "react";
+import {Button, Chip} from 'react-native-paper';
 
 type ThumbnailProps = {
     title: string,
     hospital: string,
     doctor: string,
-    hash?: string
+    diagnosis: string,
+    hash: string
 }
 
 const Thumbnail: React.FC<ThumbnailProps> = (props) => {
@@ -16,8 +18,19 @@ const Thumbnail: React.FC<ThumbnailProps> = (props) => {
             >
                 {props.title}
             </Text>
-            <Text> {props.hospital} </Text>
-            <Text> {props.doctor} </Text>
+            <Text> <Chip icon="hospital-building" onPress={() => console.log('Pressed')} textStyle={{color: '#64748b'}}>{props.hospital}</Chip> </Text>
+            <Text> <Chip icon="doctor" onPress={() => console.log('Pressed')} textStyle={{color: '#64748b'}}>{props.doctor}</Chip> </Text>
+            <View style={{
+                width: '100%',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexDirection: 'row'
+            }}>
+                <Text> <Chip icon="file-document-multiple" onPress={() => console.log('Pressed')} textStyle={{color: '#64748b'}}>{props.diagnosis}</Chip> </Text>
+                <Button mode={'outlined'}>
+                    View Report
+                </Button>
+            </View>
         </View>
     </>
 }
@@ -25,15 +38,20 @@ const Thumbnail: React.FC<ThumbnailProps> = (props) => {
 const styles = StyleSheet.create({
     container: {
         alignItems: 'flex-start',
-        backgroundColor:"#EDF2F7",
+        backgroundColor:"#fff",
         padding: 10,
+        paddingVertical: 20,
         textAlign: 'left',
-        width: '100%'
+        width: '100%',
+        borderRadius: 10,
+        flexDirection: 'column',
     },
     title: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#000'
+        color: '#000',
+        paddingHorizontal: 10,
+        marginBottom: 10
     },
 
 });

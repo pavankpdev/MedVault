@@ -1,8 +1,10 @@
 import React, {createContext, useState, useEffect, useContext} from 'react';
 import { supabase } from '../Provider/supabase';
 import { Session } from '@supabase/supabase-js';
+import {usePathname} from "expo-router";
+import {useSecureStorage} from "../hooks/useSecureStorage";
 
-type IUser = {
+export type IUser = {
     id: string;
     name: string;
     hospital: string;
@@ -24,7 +26,16 @@ const AuthProvider = (props: Props) => {
     // user null = loading
     const [isAuthenticated, setIsAuthenticated] = useState<null | boolean>(null);
     const [user, setUser] = useState<IUser | null>(null)
+    const {getItem} = useSecureStorage()
 
+    const path = usePathname()
+
+    useEffect(() => {
+        getItem("user").then((user) => {
+            const parsedUser = JSON.parse(user || "{}")
+            setUser(parsedUser)
+        })
+    }, [path]);
 
     return (
         <AuthContext.Provider

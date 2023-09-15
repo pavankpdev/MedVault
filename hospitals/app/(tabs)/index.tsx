@@ -16,7 +16,6 @@ import {axios} from "../../config/axios";
 export default function TabOneScreen() {
     const [id, setId] = React.useState("");
     const [password, setPassword] = React.useState("");
-    const {setItem} = useSecureStorage()
 
     const {setUser, setIsAuthenticated} = useAuth()
 
@@ -31,7 +30,6 @@ export default function TabOneScreen() {
             }
         })
 
-        console.log(data)
 
         if(data?.status === "success") {
             if (setUser) {
