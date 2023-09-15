@@ -14,6 +14,7 @@ import {deployRecordContract, getRecordContract, getVaultContract} from "./utils
 import {ethers} from "ethers";
 import {getRow, insertRow, supabase} from "./provider/supabase";
 import {session} from "./middleware/session";
+import {provider} from "./utils/ethers";
 
 const app: Express = express();
 app.use(express.json());
@@ -59,6 +60,7 @@ app.post('/doctor/login', async (req: Request, res: Response) => {
 
 app.get('/record/:hash', async (req: Request, res: Response) => {
     const { hash } = req.params;
+    console.log(hash)
     const decryptedHash = decrypt(hash)
     // const rs = await getPinnedFiles(decryptedHash).catch(console.log)
     return res.json({ipfs: decryptedHash}).status(200)
@@ -124,13 +126,14 @@ app.post('/record/new', upload.single('file') , async (req: Request, res: Respon
         const {data: user, error} = await getRow('Users', 'id', patientId)
 
         if(error) {
+            console.log(error)
             return res.status(500).json({
                 error: error.message,
             })
         }
 
         const pinned = await pinFileToIPFS(req?.file?.filename, JSON.parse(metadata), name)
-        const encryptedHash = encrypt(pinned.IpfsHash)
+        const encryptedHash = encrypt(pinned?.IpfsHash)
 
         const deployment = await deployRecordContract(name, encryptedHash)
         await deployment.waitForDeployment()
@@ -166,16 +169,36 @@ app.post('/record/new', upload.single('file') , async (req: Request, res: Respon
 })
 
 app.post('/record/access', async (req: Request, res: Response) => {
-    const {doctorId} = req.body
+    const {doctorId, recordId} = req.body
 
-    const totalRecords = await (getVaultContract()).totalRecords()
-    console.log(totalRecords)
+    console.log(req.query?.revoke)
+
+    if(req.query?.revoke) {
+        console.log(doctorId, recordId)
+        const {data, error} = await supabase.from('Records').delete().eq('address', recordId).eq('doctor_id', doctorId)
+        console.log(data, error)
+
+        if(error) {
+            return res.json({
+                error: error.message,
+            }).status(500)
+        }
+
+        return res.json({
+            data,
+        })
+    }
 
     const {data, error} = await insertRow('Records', {
-        id: Date.now(),
-        address: totalRecords - 1,
-        doctorId: doctorId,
+        address: recordId,
+        doctor_id: doctorId,
     })
+
+    if(error) {
+        return res.json({
+            error: error.message,
+        }).status(500)
+    }
 
     return res.json({
         data,
@@ -198,6 +221,44 @@ app.get('/record/access/:doctorId', async (req: Request, res: Response) => {
         data,
     })
 
+})
+
+app.get('/record/get-allowed-doctors/:recordId', async (req: Request, res: Response) => {
+    const {recordId} = req.params
+
+    const {data, error} =
+        await supabase
+            .from('Records')
+            .select('*, doctor:doctor_id(id, name, hospital, address)')
+            .eq('address', recordId)
+
+    return res.json({
+        data
+    })
+
+})
+
+app.post('/transaction/write', async (req: Request, res: Response) => {
+    const {userId, method, abi, params, password, address} = req.body
+
+    const {data: user, error} = await getRow('Wallets', 'user_id', userId)
+
+    if(error) {
+        return res.json({
+            error: error.message,
+        }).status(500)
+    }
+
+    const wallet = await ethers.Wallet.fromEncryptedJson(user.encryptedJSON, password)
+    const signer = wallet.connect(provider)
+    const contract = new ethers.Contract(address, abi, signer)
+
+    const tx = await contract[method](...params)
+    await tx.wait()
+
+    return res.json({
+        txHash: tx.hash,
+    })
 })
 
 app.listen(port, () => {

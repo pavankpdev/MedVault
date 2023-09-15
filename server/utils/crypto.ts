@@ -3,7 +3,7 @@ import crypto from 'crypto';
 
 const algorithm = 'aes-256-cbc';
 export function encrypt(data: string) {
-    const password = process.env.CIPHER_KEY as string;
+    const password = '1tQAsnRefd/x10UGgtqvGqQHU8j7ZSm7aUIb12MCRq8='
     const iv = Buffer.from(crypto.createHash('sha256').update(password).digest('base64').substr(0, 16))
     const key = crypto.createHash('sha256').update(password).digest('base64').substr(0, 32);
     let cipher = crypto.createCipheriv(algorithm, Buffer.from(key), iv);
@@ -13,7 +13,7 @@ export function encrypt(data: string) {
 }
 
 export function decrypt(data: string) {
-    const password = process.env.CIPHER_KEY as string;
+    const password = '1tQAsnRefd/x10UGgtqvGqQHU8j7ZSm7aUIb12MCRq8='
     const iv = Buffer.from(crypto.createHash('sha256').update(password).digest('base64').substr(0, 16))
     const key = crypto.createHash('sha256').update(password).digest('base64').substr(0, 32);
     let encryptedText = Buffer.from(data, 'hex');
