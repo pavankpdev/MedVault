@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import EHRVaultJSON from "../ABI/EHRVault.json"
 
 export type ChainOptions = {
     rpc: string,
@@ -31,4 +32,10 @@ export const createWallet = async (password: string) => {
     const wallet = ethers.Wallet.createRandom().connect(provider);
     const encryptedJSON = await wallet.encrypt(password);
     return { wallet: wallet.address, encryptedJSON };
+}
+
+export const getVaultContract = () => {
+    const provider = createProvider();
+    const abi = EHRVaultJSON.abi;
+    return new ethers.Contract('0xbF8C37B93863f9375442b4634b100689971739D7', abi, provider);
 }

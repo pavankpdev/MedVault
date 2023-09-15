@@ -44,6 +44,8 @@ export default function TabOneScreen() {
             }
         }).catch(console.log)
 
+        console.log(res?.data)
+
         await setItem("wallet", JSON.stringify(res?.data?.encryptedWalletJSON))
 
         if (setUser) {

@@ -21,9 +21,13 @@ export default function TabLayout() {
 
   return (
     <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-      }}>
+        screenOptions={{
+            tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+            tabBarStyle: {
+                display: 'none'
+            },
+        }}
+    >
       <Tabs.Screen
         name="index"
         options={{
@@ -53,12 +57,19 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="dashabord"
+        name="dashboard"
         options={{
-          title: 'Tab Two',
+          title: 'Your Reports',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
         }}
       />
+        <Tabs.Screen
+            name="[hash]"
+            options={{
+                title: 'View Report',
+                tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+            }}
+        />
     </Tabs>
   );
 }
