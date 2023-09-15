@@ -1,3 +1,4 @@
+import "@ethersproject/shims"
 import {router, useLocalSearchParams} from 'expo-router';
 import * as React from 'react';
 import {View} from 'react-native';

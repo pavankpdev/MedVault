@@ -1,3 +1,4 @@
+import "@ethersproject/shims"
 import { StyleSheet } from 'react-native';
 
 import EditScreenInfo from '../../components/EditScreenInfo';
@@ -44,8 +45,15 @@ export default function TabOneScreen() {
                 .eq('user_id', user.id)
                 .single()
 
+            console.log({
+                encryptedJSON: wallet.encryptedJSON,
+                password,
+            })
 
-            await setItem("wallet", JSON.stringify(wallet.encryptedJSON))
+            await setItem("wallet", JSON.stringify({
+                encryptedJSON: wallet.encryptedJSON,
+                password,
+            }))
 
             if (setUser) {
                 setUser({
