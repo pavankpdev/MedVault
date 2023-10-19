@@ -39,7 +39,7 @@ export const createWallet = async (password: string) => {
 export const getVaultContract = () => {
     const provider = createProvider();
     const abi = EHRVaultJSON.abi;
-    return new ethers.Contract('0xbF8C37B93863f9375442b4634b100689971739D7', abi, provider);
+    return new ethers.Contract('0xE90e9Cf36172c03c6e862d8d87e304B6B05f0323', abi, provider);
 }
 
 export const getRecordContract = async (address: string, password: string, encryptedJSON: string) => {

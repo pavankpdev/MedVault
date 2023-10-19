@@ -24,5 +24,5 @@ export const getRecordContract = (address: string) => {
 
 export const getVaultContract = () => {
     const abi = EHRVaultJSON.abi;
-    return new ethers.Contract('0xbF8C37B93863f9375442b4634b100689971739D7', abi, signer);
+    return new ethers.Contract('0xE90e9Cf36172c03c6e862d8d87e304B6B05f0323', abi, signer);
 }
