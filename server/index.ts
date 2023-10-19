@@ -15,6 +15,15 @@ import {ethers} from "ethers";
 import {getRow, insertRow, supabase} from "./provider/supabase";
 import {session} from "./middleware/session";
 import {provider} from "./utils/ethers";
+import {
+    deserializeRSAPrivateKey,
+    deserializeRSAPublicKey,
+    generateRSAKeyPairs,
+    RSADecrypt,
+    RSAEncrypt,
+    serializeRSAKey
+} from "./utils/RSA";
+import {KeyObject} from "crypto";
 
 const app: Express = express();
 app.use(express.json());
@@ -60,8 +69,33 @@ app.post('/doctor/login', async (req: Request, res: Response) => {
 
 app.get('/record/:hash', async (req: Request, res: Response) => {
     const { hash } = req.params;
-    console.log(hash)
-    const decryptedHash = decrypt(hash)
+    const { viewerId, isDoctor } = req.query
+
+    let privateKey: KeyObject | undefined = undefined
+
+    if(isDoctor) {
+        const {data, error} = await getRow('Doctors', 'id', viewerId as string)
+
+        if(error) {
+            return res.json({
+                error: error.message,
+            }).status(500)
+        }
+
+        privateKey = deserializeRSAPrivateKey(decrypt(Buffer.from(data.private_key, 'base64').toString('utf-8')))
+    } else {
+        const {data, error: getRSAKeyPairsError} = await getRow("KeyPairs", "user_id", viewerId as string)
+
+        if(getRSAKeyPairsError) {
+            return res.status(500).json({
+                error: getRSAKeyPairsError.message,
+            })
+        }
+
+        privateKey = deserializeRSAPrivateKey(decrypt(Buffer.from(data.private_key, 'base64').toString('utf-8')))
+    }
+
+    const decryptedHash = RSADecrypt(privateKey, hash)
     // const rs = await getPinnedFiles(decryptedHash).catch(console.log)
     return res.json({ipfs: decryptedHash}).status(200)
 })
@@ -99,12 +133,33 @@ app.post('/account/new', session ,async (req: Request, res: Response) => {
         )
 
         if(createWalletErr) {
-            console.log(createWalletErr)
             return res.status(500).json({
                 error: createWalletErr.message,
             })
         }
 
+        const {publicKey, privateKey} = generateRSAKeyPairs()
+
+        const serializedPublicKey = serializeRSAKey(publicKey)
+        const serializedPrivateKey = serializeRSAKey(privateKey)
+
+        const encryptedPrivateKey = encrypt(Buffer.from(serializedPrivateKey).toString("base64"))
+
+        const {error: createKeyPairError} =await insertRow(
+            'KeyPairs',
+            {
+                public_key: Buffer.from(serializedPublicKey).toString("base64"),
+                private_key: encryptedPrivateKey,
+                user_id: user.id
+            }
+        )
+
+        if(createKeyPairError) {
+            console.log(createKeyPairError)
+            return res.status(500).json({
+                error: createKeyPairError.message,
+            })
+        }
 
         return res.json({
             encryptedWalletJSON: JSON.parse(encryptedWalletJSON),
@@ -133,7 +188,18 @@ app.post('/record/new', upload.single('file') , async (req: Request, res: Respon
         }
 
         const pinned = await pinFileToIPFS(req?.file?.filename, JSON.parse(metadata), name)
-        const encryptedHash = encrypt(pinned?.IpfsHash)
+
+        const {data, error: getRSAKeyPairsError} = await getRow("KeyPairs", "user_id", patientId)
+
+        if(getRSAKeyPairsError) {
+            return res.status(500).json({
+                error: getRSAKeyPairsError.message,
+            })
+        }
+
+        const publicKey = deserializeRSAPublicKey(Buffer.from(data.public_key, 'base64').toString('utf-8'))
+
+        const encryptedHash = RSAEncrypt(publicKey, pinned?.IpfsHash)
 
         const deployment = await deployRecordContract(name, encryptedHash)
         await deployment.waitForDeployment()
@@ -171,12 +237,8 @@ app.post('/record/new', upload.single('file') , async (req: Request, res: Respon
 app.post('/record/access', async (req: Request, res: Response) => {
     const {doctorId, recordId} = req.body
 
-    console.log(req.query?.revoke)
-
     if(req.query?.revoke) {
-        console.log(doctorId, recordId)
         const {data, error} = await supabase.from('Records').delete().eq('address', recordId).eq('doctor_id', doctorId)
-        console.log(data, error)
 
         if(error) {
             return res.json({
@@ -259,6 +321,21 @@ app.post('/transaction/write', async (req: Request, res: Response) => {
     return res.json({
         txHash: tx.hash,
     })
+})
+
+app.get("/gen/keypairs" , async (req, res) => {
+    const {publicKey, privateKey} = generateRSAKeyPairs()
+
+    const serializedPublicKey = serializeRSAKey(publicKey)
+    const serializedPrivateKey = serializeRSAKey(privateKey)
+
+    const encryptedPrivateKey = encrypt(Buffer.from(serializedPrivateKey).toString("base64"))
+
+    return res.json({
+        public_key: Buffer.from(serializedPublicKey).toString("base64"),
+        private_key: encryptedPrivateKey,
+    })
+
 })
 
 app.listen(port, () => {
