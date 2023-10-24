@@ -1,5 +1,4 @@
 import crypto, {KeyObject} from "crypto";
-import forge from 'node-forge'
 import NodeRSA from 'node-rsa'
 export const generateRSAKeyPairs = () => {
     return new NodeRSA({ b: 2048 });

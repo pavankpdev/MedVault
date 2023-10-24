@@ -69,37 +69,25 @@ app.post('/doctor/login', async (req: Request, res: Response) => {
 
 app.get('/record/:hash', async (req: Request, res: Response) => {
     const { hash } = req.params;
-    const { viewerId, isDoctor } = req.query
+    const { viewerId, patientId } = req.query
     console.log(req.params, req.query)
 
     let privateKey: string | undefined = undefined
 
-    if(isDoctor === "true") {
-        const {data, error} = await getRow('Doctors', 'id', viewerId as string)
+    const {data, error: getRSAKeyPairsError} = await getRow("KeyPairs", "user_id", (patientId || viewerId) as string)
 
-        if(error) {
-            return res.json({
-                error: error.message,
-            }).status(500)
-        }
-
-        privateKey = data.private_key as string
-    } else {
-        const {data, error: getRSAKeyPairsError} = await getRow("KeyPairs", "user_id", viewerId as string)
-
-        if(getRSAKeyPairsError) {
-            return res.status(500).json({
-                error: getRSAKeyPairsError.message,
-            })
-        }
-
-        console.log(data.private_key)
-
-        privateKey = data.private_key as string
+    if(getRSAKeyPairsError) {
+        console.log(getRSAKeyPairsError)
+        return res.status(500).json({
+            error: getRSAKeyPairsError.message,
+        })
     }
 
+    privateKey = data.private_key as string
+    console.log(privateKey);
+
     const decryptedHash = RSADecrypt(privateKey, hash)
-    console.log(decryptedHash)
+    console.log(decryptedHash);
     // const rs = await getPinnedFiles(decryptedHash).catch(console.log)
     return res.json({ipfs: decryptedHash}).status(200)
 })
