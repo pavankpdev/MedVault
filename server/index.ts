@@ -20,7 +20,7 @@ import {
     deserializeRSAPublicKey,
     generateRSAKeyPairs,
     RSADecrypt,
-    RSAEncrypt,
+    RSAEncrypt, serializePubKey, serializePvtKey,
     serializeRSAKey
 } from "./utils/RSA";
 import {KeyObject} from "crypto";
@@ -70,10 +70,11 @@ app.post('/doctor/login', async (req: Request, res: Response) => {
 app.get('/record/:hash', async (req: Request, res: Response) => {
     const { hash } = req.params;
     const { viewerId, isDoctor } = req.query
+    console.log(req.params, req.query)
 
-    let privateKey: KeyObject | undefined = undefined
+    let privateKey: string | undefined = undefined
 
-    if(isDoctor) {
+    if(isDoctor === "true") {
         const {data, error} = await getRow('Doctors', 'id', viewerId as string)
 
         if(error) {
@@ -82,7 +83,7 @@ app.get('/record/:hash', async (req: Request, res: Response) => {
             }).status(500)
         }
 
-        privateKey = deserializeRSAPrivateKey(decrypt(Buffer.from(data.private_key, 'base64').toString('utf-8')))
+        privateKey = data.private_key as string
     } else {
         const {data, error: getRSAKeyPairsError} = await getRow("KeyPairs", "user_id", viewerId as string)
 
@@ -92,10 +93,13 @@ app.get('/record/:hash', async (req: Request, res: Response) => {
             })
         }
 
-        privateKey = deserializeRSAPrivateKey(decrypt(Buffer.from(data.private_key, 'base64').toString('utf-8')))
+        console.log(data.private_key)
+
+        privateKey = data.private_key as string
     }
 
     const decryptedHash = RSADecrypt(privateKey, hash)
+    console.log(decryptedHash)
     // const rs = await getPinnedFiles(decryptedHash).catch(console.log)
     return res.json({ipfs: decryptedHash}).status(200)
 })
@@ -138,18 +142,16 @@ app.post('/account/new', session ,async (req: Request, res: Response) => {
             })
         }
 
-        const {publicKey, privateKey} = generateRSAKeyPairs()
+        const key = generateRSAKeyPairs()
 
-        const serializedPublicKey = serializeRSAKey(publicKey)
-        const serializedPrivateKey = serializeRSAKey(privateKey)
-
-        const encryptedPrivateKey = encrypt(Buffer.from(serializedPrivateKey).toString("base64"))
+        const serializedPublicKey = serializePubKey(key)
+        const serializedPrivateKey = serializePvtKey(key)
 
         const {error: createKeyPairError} =await insertRow(
             'KeyPairs',
             {
-                public_key: Buffer.from(serializedPublicKey).toString("base64"),
-                private_key: encryptedPrivateKey,
+                public_key: serializedPublicKey,
+                private_key: serializedPrivateKey,
                 user_id: user.id
             }
         )
@@ -197,15 +199,13 @@ app.post('/record/new', upload.single('file') , async (req: Request, res: Respon
             })
         }
 
-        const publicKey = deserializeRSAPublicKey(Buffer.from(data.public_key, 'base64').toString('utf-8'))
-
-        const encryptedHash = RSAEncrypt(publicKey, pinned?.IpfsHash)
+        const encryptedHash = RSAEncrypt(data.public_key, pinned?.IpfsHash)
 
         const deployment = await deployRecordContract(name, encryptedHash)
         await deployment.waitForDeployment()
         const recordAddress = await deployment.getAddress()
 
-        const recordContract = getRecordContract(recordAddress)
+        const recordContract =  getRecordContract(recordAddress)
 
         const record = {
             id: 1,
@@ -324,17 +324,17 @@ app.post('/transaction/write', async (req: Request, res: Response) => {
 })
 
 app.get("/gen/keypairs" , async (req, res) => {
-    const {publicKey, privateKey} = generateRSAKeyPairs()
-
-    const serializedPublicKey = serializeRSAKey(publicKey)
-    const serializedPrivateKey = serializeRSAKey(privateKey)
-
-    const encryptedPrivateKey = encrypt(Buffer.from(serializedPrivateKey).toString("base64"))
-
-    return res.json({
-        public_key: Buffer.from(serializedPublicKey).toString("base64"),
-        private_key: encryptedPrivateKey,
-    })
+    // const {publicKey, privateKey} = generateRSAKeyPairs()
+    //
+    // const serializedPublicKey = serializeRSAKey(publicKey)
+    // const serializedPrivateKey = serializeRSAKey(privateKey)
+    //
+    // const encryptedPrivateKey = encrypt(Buffer.from(serializedPrivateKey).toString("base64"))
+    //
+    // return res.json({
+    //     public_key: Buffer.from(serializedPublicKey).toString("base64"),
+    //     private_key: encryptedPrivateKey,
+    // })
 
 })
 
