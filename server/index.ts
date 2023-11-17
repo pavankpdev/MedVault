@@ -153,7 +153,8 @@ app.post('/account/new', session ,async (req: Request, res: Response) => {
 
         return res.json({
             encryptedWalletJSON: JSON.parse(encryptedWalletJSON),
-            wallet: wallet.address
+            wallet: wallet.address,
+            userId: user.id,
         }).status(201)
     } catch (err: unknown) {
         console.log(err)
